@@ -27,7 +27,7 @@ bunx jsr add @mapokapo/simecs
 ```ts
 import App from "@mapokapo/simecs";
 // or in Deno
-import App from "jsr:@mapokapo/simecs@^0.0.2";
+import App from "jsr:@mapokapo/simecs@^0.0.3";
 
 import { Position, Velocity } from "@mapokapo/simecs/core/components";
 import { MovementSystem } from "@mapokapo/simecs/core/systems";
