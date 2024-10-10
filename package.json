@@ -2,7 +2,7 @@
   "name": "simecs",
   "description": "SimECS - Simple ECS framework",
   "author": "mapokapo<leopetrovic11@gmail.com>",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "license": "MIT",
   "module": "mod.ts",
   "type": "module",

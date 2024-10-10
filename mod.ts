@@ -1,6 +1,6 @@
 /**
  * @license MIT
- * @module mod.ts The main module for the ECS library. Serves as a barrel file for JSR.
+ * @module default The main module for the ECS library. Serves as a barrel file for JSR.
  */
 
 import App from "./src/app";

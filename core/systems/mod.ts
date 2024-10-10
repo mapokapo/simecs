@@ -1,5 +1,5 @@
 /**
- * @module core/systems/mod.ts Contains systems for the core package.
+ * @module core/systems Contains systems for the core package.
  */
 
 import MovementSystem from "./movement";

@@ -1,5 +1,5 @@
 /**
- * @module core/schedules/mod.ts Contains schedules for the core package.
+ * @module core/schedules Contains schedules for the core package.
  */
 
 import StartupSchedule from "./startup";
