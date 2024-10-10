@@ -1,0 +1,27 @@
+{
+  "name": "simecs",
+  "description": "SimECS - Simple ECS framework",
+  "author": "mapokapo<leopetrovic11@gmail.com>",
+  "version": "0.0.1",
+  "license": "MIT",
+  "module": "mod.ts",
+  "type": "module",
+  "scripts": {
+    "lint": "bunx --bun eslint -- --ignore-pattern 'test/*'",
+    "format": "bunx --bun prettier -- --write"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.12.0",
+    "@types/bun": "latest",
+    "eslint-config-prettier": "^9.1.0",
+    "globals": "^15.11.0",
+    "typescript-eslint": "^8.8.1"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@types/eslint-config-prettier": "^6.11.3",
+    "@types/eslint__js": "^8.42.3"
+  }
+}

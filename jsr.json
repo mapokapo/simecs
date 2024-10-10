@@ -1,0 +1,23 @@
+{
+  "$schema": "https://jsr.io/schema/config-file.v1.json",
+  "name": "@mapokapo/simecs",
+  "version": "0.0.1",
+  "exports": {
+    ".": "./mod.ts",
+    "./core/components": "./core/components/mod.ts",
+    "./core/constants": "./core/constants/mod.ts",
+    "./core/hooks": "./core/hooks/mod.ts",
+    "./core/schedules": "./core/schedules/mod.ts",
+    "./core/systems": "./core/systems/mod.ts"
+  },
+  "publish": {
+    "include": [
+      "mod.ts",
+      "src/**/*.ts",
+      "core/**/*.ts",
+      "LICENSE",
+      "README.md"
+    ],
+    "exclude": ["test"]
+  }
+}
