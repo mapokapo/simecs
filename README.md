@@ -51,20 +51,23 @@ main();
 
 ### Lightweight
 
-This package uses no dependencies and is made of around 200 lines of code. 300
-if you count the `@mapokapo/simecs/core` package.
+SimECS uses no dependencies and is made of around 250 lines of code. 350 if you
+count the `@mapokapo/simecs/core` package.
 
-Every piece of code is written with performance in mind, and the ECS library is
-designed to be as lightweight as possible.
+Every piece of code is written to be as simple and modular as possible, so you
+can easily understand and modify it to fit your needs.
 
 ### Customizable
 
-Every aspect of the ECS library is customizable. You can create your own
-components, systems, and hooks, and even system schedules to fit your needs.
+Every aspect of SimECS is customizable. You can create your own components,
+systems, hooks, and even system schedules to fit your needs.
 
-The example above mostly contains `@mapokapo/simecs/core` components, systems,
-hooks, and schedules, which are not part of the ECS library itself but are
-pieces of code built on top of the ECS library.
+The example above mostly contains code from `@mapokapo/simecs/core`, which is
+not an integral part of SimECS itself but contains common objects that can be
+used to implement a simple MVP.
+
+The main part of SimECS, along with the `App` class, is only composed of the
+following classes:
 
 #### Components
 
@@ -90,18 +93,19 @@ best it can, and takes heavy inspiration from other ECS frameworks like Rust's
 Bevy.
 
 ```ts
-import { System } from "@mapokapo/simecs";
+import { System, Query } from "@mapokapo/simecs";
+import { Health } from "./components";
 
 export class HealthSystem extends System<[Health]> {
   // which components the system operate on
-  select() {
-    return this.archetypeTable.find(Health); // query for entities which have specific components. `archetypeTable` comes from `System`.
+  select(): Query<[Health]>[] {
+    return this.archetypeTable.find(Health); // query for entities which have specific components. `archetypeTable` comes from the `System` superclass.
   }
 
   update(
-    entity: Entity, // the current entity
-    components: [Health] // properly typed components
-    // can be async
+    entity: Entity, // the current entity the system is operating on
+    components: [Health] // properly typed components belonging to the entity
+    // `update` can be async
   ): void | Promise<void> {
     if (components[0].value <= 0) {
       this.archetypeTable.delete(entity); // remove entity from the system
@@ -112,8 +116,8 @@ export class HealthSystem extends System<[Health]> {
 
 #### Hooks
 
-Hooks are a way to respond to lifecycle events in the ECS library. They can be
-used to log, debug, or even modify the ECS library's behavior.
+Hooks are a way to respond to lifecycle events in SimECS. They can be used to
+log, debug, or even modify the behavior of SimECS.
 
 ```ts
 import { Hook } from "@mapokapo/simecs";
@@ -124,8 +128,9 @@ export class DebugHook extends Hook {
     system: System<Component[]>,
     // the queries that matched the system's requirements (as specified in the system's `select` method)
     queries: Query<Component[]>[]
+    // `beforeSystemUpdate` can be async
   ): void | Promise<void> {
-    // `queries` will never be empty, because if a system did not match any entities, it would not be called, and neither would its hooks
+    // `queries` will never be empty, because if a system did not ask for any components, then it won't be called, and neither will its hooks
     console.log(
       `System ${
         system.constructor.name
@@ -161,9 +166,8 @@ export class DebugHook extends Hook {
 #### Schedules
 
 Schedules are a way to group systems together and run them at specific times.
-The ECS library comes with 2 schedules built-in: `UPDATE_SCHEDULE`, which runs
-systems every frame, and `STARTUP_SCHEDULE`, which runs systems once at the
-start of the ECS library.
+SimECS comes with 2 schedules built-in: `UPDATE_SCHEDULE`, which runs systems
+every frame, and `STARTUP_SCHEDULE`, which runs systems once at the start.
 
 You can create your own schedules by extending the `Schedule` class.
 
@@ -171,7 +175,7 @@ You can create your own schedules by extending the `Schedule` class.
 import { Schedule } from "@mapokapo/simecs";
 
 export class DelayedUpdateSchedule extends Schedule {
-  // custom data
+  // you can use custom state for extra functionality
   constructor(private timeout = 500) {
     super(
       // schedule name
@@ -190,27 +194,46 @@ export class DelayedUpdateSchedule extends Schedule {
 }
 ```
 
+In order to use this schedule, you must register a system with it:
+
+```ts
+import App from "@mapokapo/simecs";
+import { DelayedUpdateSchedule } from "./schedules";
+
+// alias for the schedule
+const DELAYED_UPDATE_SCHEDULE = new DelayedUpdateSchedule();
+
+export default async function main() {
+  const app = new App()
+    .addSystem(DELAYED_UPDATE_SCHEDULE, MySystem)
+    .addSystem(UPDATE_SCHEDULE, MyOtherSystem);
+  // `MySystem` will run on the `DELAYED_UPDATE_SCHEDULE` schedule, independently from `MyOtherSystem` which will run on the `UPDATE_SCHEDULE` schedule
+}
+
+main();
+```
+
 ### Archetype-table based
 
-The ECS library is based on the archetype-table pattern, which is a way to store
-entities and their components in a way that is cache-friendly and allows for
-fast iteration over entities with specific components.
+SimECS is based on the archetype-table pattern, which is a way to store entities
+and their components in a way that is cache-friendly and allows for fast
+iteration over entities with specific components.
 
 This pattern is implemented in the `ArchetypeTable` class, which is used by the
 `System` class to query for entities with specific components. It is also where
-the `Query` class comes from, which connects an entity with some components
-required by a system.
+the `Query` class comes from, which is used to connect an entity with some
+components required by a system in a type-safe way.
 
 ### Type-safe
 
 The ECS library is built with TypeScript in mind, and it tries to provide as
 much type safety as possible.
 
-Generics, conditional types, and mapped types are used to ensure that
-components, systems, and hooks are properly typed.
+Generics, tuples, mapped types, null safety, and a fluent API are used to ensure
+that components, systems, and hooks are properly typed.
 
 ```ts
-// ... inside a system's `select` method
+// ... eg. inside a system's `select` method
 const query = this.archetypeTable.find(Health, Position); // find all entities which have both Health and Position components
 
 // `query` is of type `Query<[Health, Position]>`
@@ -218,7 +241,7 @@ const entity: Entity = query.entity;
 const health: Health = query.components[0];
 const position: Position = query.components[1];
 
-if (health.value < 0) console.log(`Entity #${entity} is dead`);
+if (health.value < 0) console.log(`Entity #${entity} has died!`);
 position.x += 1;
 position.y += 1;
 ```
