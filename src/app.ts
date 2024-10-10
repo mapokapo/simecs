@@ -1,3 +1,22 @@
+/**
+ * @module app.ts Contains the main `App` class.
+ *
+ * @example
+ * ```ts
+ * import App, { Entity, Component, System, Schedule, Hook } from "@mapokapo/simecs";
+ * import { UPDATE_SCHEDULE } from "@mapokapo/simecs/constants";
+ * import SomeSystem from "./someSystem";
+ * import SomeHook from "./someHook";
+ * import SomeComponent from "./someComponent";
+ *
+ * const app = new App()
+ *  .addEntity(null, new SomeComponent()) // Generate a new entity with a sequential id and attach a component to it
+ *  .addSystem(UPDATE_SCHEDULE, SomeSystem) // Add a system to the app
+ *  .addHook(new SomeHook()); // Add a hook to the app
+ *
+ * app.run(); // Run the app
+ */
+
 import type System from "./system";
 import type Hook from "./hook";
 import type Component from "./component";
@@ -8,14 +27,32 @@ import ArchetypeTable from "./archetypeTable";
  * The main class for the ECS. This class is responsible for managing entities, systems, and hooks. It also runs the main loop of the ECS.
  */
 export default class App {
+  /**
+   * The archetype table that stores entities and their components.
+   */
   private archetypeTable: ArchetypeTable = new ArchetypeTable();
+
+  /**
+   * The systems that are scheduled to run. Each system is associated with a schedule.
+   */
   private scheduledSystems: {
     schedule: Schedule;
     system: System<Component[]>;
   }[] = [];
+
+  /**
+   * The hooks that are attached to the app.
+   */
   private hooks: Hook[] = [];
 
+  /**
+   * The last entity id that was generated. Used for generating new sequential entity ids.
+   */
   private lastEntityId = 0;
+
+  /**
+   * The current schedule that is being ran.
+   */
   private currentSchedule: Schedule | null = null;
 
   /**
@@ -62,13 +99,16 @@ export default class App {
    */
   public addSystem<T extends Component[]>(
     schedule: Schedule,
-    systemClass: new (archetypeTable: ArchetypeTable) => System<T>
+    system: new (archetypeTable: ArchetypeTable) => System<T>
   ): this {
-    const system = new systemClass(this.archetypeTable);
+    /**
+     * A new instance of the system class with the archetype table.
+     */
+    const systemInstance = new system(this.archetypeTable);
 
     this.scheduledSystems.push({
       schedule,
-      system,
+      system: systemInstance,
     });
 
     return this;
@@ -90,13 +130,17 @@ export default class App {
    * @param schedule The schedule to run systems for.
    */
   public async step(schedule: Schedule): Promise<void> {
-    // First get all systems that are scheduled to run for the given schedule.
+    /**
+     * The systems that are scheduled to run on the given schedule.
+     */
     const scheduledSystems = this.scheduledSystems.filter(
       scheduledSystem => scheduledSystem.schedule === schedule
     );
 
     for (const scheduledSystem of scheduledSystems) {
-      // The system defines which components it needs to run. Each query is a component that the system can run on and the entity that owns that component.
+      /**
+       * The queries for the system, as defined by the system's `select` method.
+       */
       const queries = scheduledSystem.system.select();
 
       // If there are no queries, skip the system.
@@ -113,6 +157,9 @@ export default class App {
 
       // Run the system update for each query.
       for (const query of queries) {
+        /**
+         * The result of the system update. Used for handling Promises.
+         */
         const res = scheduledSystem.system.update(
           query.entity,
           query.components
@@ -141,11 +188,14 @@ export default class App {
       throw new Error("No systems to run");
     }
 
+    /**
+     * The schedules that are associated with the systems. Schedules cannot be added manually - they are derived from the systems.
+     */
     const schedules: Schedule[] = this.scheduledSystems.map(
       scheduledSystem => scheduledSystem.schedule
     );
 
-    // first run
+    // First run,
     if (this.currentSchedule === null) {
       // Sorted in ascending order so that the schedule with the lowest order value is ran first.
       schedules.sort((a, b) => a.order - b.order);
@@ -165,7 +215,7 @@ export default class App {
 
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     while (true) {
-      // no more schedules to run
+      // No more schedules to run - end of app lifecycle.
       if (this.currentSchedule === null) {
         break;
       }

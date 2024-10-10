@@ -8,7 +8,7 @@
   "type": "module",
   "scripts": {
     "lint": "bunx --bun eslint -- --ignore-pattern 'test/*'",
-    "format": "bunx --bun prettier -- --write"
+    "format": "bunx --bun prettier -- . --write"
   },
   "devDependencies": {
     "@eslint/js": "^9.12.0",

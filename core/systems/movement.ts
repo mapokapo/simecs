@@ -4,6 +4,9 @@ import type { Entity } from "../../src/entity";
 import System from "../../src/system";
 import type { Query } from "../../mod";
 
+/**
+ * A basic movement system that moves entities based on their velocity. It requires the `Position` and `Velocity` components.
+ */
 export default class MovementSystem extends System<[Position, Velocity]> {
   override select(): Query<[Position, Velocity]>[] {
     return this.archetypeTable.find(Position, Velocity);

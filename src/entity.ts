@@ -1,4 +1,8 @@
 /**
+ * @module entity.ts Contains the `Entity` type.
+ */
+
+/**
  * Represents an entity in the ECS.
  *
  * An entity is a "thing" which exists in the ECS world, identified using an id number.

@@ -1,18 +1,55 @@
+/**
+ * @module archetypeTable.ts Contains the `ArchetypeTable`, `Query`, and `ComponentConstructor` types.
+ *
+ * @example
+ * ```ts
+ * import ArchetypeTable, { Query } from "./archetypeTable";
+ * import Component from "./component";
+ * import { Entity } from "./entity";
+ *
+ * const archetypeTable = new ArchetypeTable();
+ *
+ * archetypeTable.add(entity, new Position(0, 0));
+ *
+ * if (archetypeTable.has(entity, Position)) {
+ *  const position = archetypeTable.get(entity, Position);
+ *  console.log(position.x, position.y);
+ * }
+ *
+ * const queries = archetypeTable.find(Position, Velocity);
+ * queries.forEach((query) => {
+ *  const entity = query.entity;
+ *  const [position, velocity] = query.components;
+ * });
+ *
+ * archetypeTable.delete(entity);
+ * ```
+ */
+
 import type Component from "./component";
 import type { Entity } from "./entity";
 
 /**
  * Represents a query for a system. A query is a component and the entity that owns that component.
+ * @template T The components of the query.
  */
 export class Query<T extends Component[]> {
   constructor(
+    /**
+     * The entity that owns the components.
+     */
     public entity: Entity,
+    /**
+     * The components of the entity.
+     */
     public components: T
   ) {}
 }
 
 /**
  * Represents a constructor for a component.
+ * @template T The component type.
+ * @param args The arguments to pass to the constructor. This is simply used to satisfy the type system.
  */
 export type ComponentConstructor<T extends Component = Component> = new (
   ...args: never[]
@@ -24,6 +61,11 @@ export type ComponentConstructor<T extends Component = Component> = new (
  * It is similar to a table in a relational database, but the columns are dynamic and the first column is always the entity id (primary key).
  */
 export default class ArchetypeTable {
+  /**
+   * The table of entities and components.
+   *
+   * @todo This could benefit from a more efficient data structure.
+   */
   private table = new Map<Entity, Component[]>();
 
   /**
@@ -32,12 +74,15 @@ export default class ArchetypeTable {
    * @param component The component to add.
    */
   public add(entity: Entity, component: Component): void {
-    const item = this.table.get(entity);
+    /**
+     * The components of the entity, if it exists.
+     */
+    const components = this.table.get(entity);
 
-    if (!item) {
+    if (!components) {
       this.table.set(entity, [component]);
     } else {
-      item.push(component);
+      components.push(component);
     }
   }
 
@@ -46,13 +91,16 @@ export default class ArchetypeTable {
    * @param entity The entity to add the components to.
    * @param components The components to add.
    */
-  public addAll(entity: Entity, components: Component[]): void {
-    const item = this.table.get(entity);
+  public addAll(entity: Entity, newComponents: Component[]): void {
+    /**
+     * The components of the entity, if it exists.
+     */
+    const components = this.table.get(entity);
 
-    if (!item) {
-      this.table.set(entity, components);
+    if (!components) {
+      this.table.set(entity, newComponents);
     } else {
-      item.push(...components);
+      components.push(...components);
     }
   }
 
@@ -68,17 +116,20 @@ export default class ArchetypeTable {
   /**
    * Checks if an entity has a component.
    * @param entity The entity to check.
-   * @param componentClass The component to check. Specified as a class, not an instance.
+   * @param component The component to check. Specified as a class, not an instance.
    * @returns True if the entity has the component, false otherwise.
    */
-  public has(entity: Entity, componentClass: ComponentConstructor): boolean {
+  public has(entity: Entity, component: ComponentConstructor): boolean {
+    /**
+     * The components of the entity, if it exists.
+     */
     const components = this.table.get(entity);
 
     if (!components) {
       return false;
     }
 
-    return components.some(c => c instanceof componentClass);
+    return components.some(c => c instanceof component);
   }
 
   /**
@@ -89,16 +140,19 @@ export default class ArchetypeTable {
    */
   public hasAll(
     entity: Entity,
-    componentClasses: ComponentConstructor[]
+    requiredComponents: ComponentConstructor[]
   ): boolean {
-    const entityComponents = this.table.get(entity);
+    /**
+     * The components of the entity, if it exists.
+     */
+    const components = this.table.get(entity);
 
-    if (!entityComponents) {
+    if (!components) {
       return false;
     }
 
-    return componentClasses.every(componentClass =>
-      entityComponents.some(c => c instanceof componentClass)
+    return requiredComponents.every(component =>
+      components.some(c => c instanceof component)
     );
   }
 
@@ -112,6 +166,9 @@ export default class ArchetypeTable {
     entity: Entity,
     component: ComponentConstructor<T>
   ): T | undefined {
+    /**
+     * The components of the entity, if it exists.
+     */
     const components = this.table.get(entity);
 
     if (!components) {
@@ -144,16 +201,22 @@ export default class ArchetypeTable {
    * });
    */
   public find<T extends Component[]>(
-    ...componentClasses: { [K in keyof T]: ComponentConstructor<T[K]> }
+    ...requiredComponents: { [K in keyof T]: ComponentConstructor<T[K]> }
   ): Query<T>[] {
+    /**
+     * The queries for the entities that contain the components.
+     */
     const queries: Query<T>[] = [];
 
     for (const [entity, components] of this.table) {
-      // Filter to check if all required components are present in the entity
-      const matchedComponents = componentClasses.map(componentClass =>
-        components.find(c => c instanceof componentClass)
+      /**
+       * The components of the entity that match the required components in the parameters.
+       */
+      const matchedComponents = requiredComponents.map(component =>
+        components.find(c => c instanceof component)
       );
 
+      // If all of the required components are present, add the entity to the queries.
       if (matchedComponents.every(c => c !== undefined)) {
         queries.push({
           entity,
